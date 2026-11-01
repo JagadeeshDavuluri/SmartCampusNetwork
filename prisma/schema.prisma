@@ -1,0 +1,108 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Gate {
+  id             String          @id @default(cuid())
+  name           String
+  location       String
+  gateType       String
+  status         String          @default("ONLINE")
+  lastOnline     DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  accessLogs     AccessLog[]
+  authorizations Authorization[]
+  securityAlerts SecurityAlert[]
+}
+
+model CampusUser {
+  id             String          @id @default(cuid())
+  name           String
+  email          String          @unique
+  phone          String?
+  userType       String          @default("STUDENT")
+  department     String?
+  rfidCardId     String?
+  biometricId    String?
+  status         String          @default("ACTIVE")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  accessLogs     AccessLog[]
+  authorizations Authorization[]
+  securityAlerts SecurityAlert[]
+
+  @@map("campus_user")
+}
+
+model AccessLog {
+  id         String      @id @default(cuid())
+  userId     String?
+  user       CampusUser? @relation(fields: [userId], references: [id])
+  gateId     String
+  gate       Gate        @relation(fields: [gateId], references: [id])
+  accessType String
+  authMethod String
+  result     String
+  reason     String?
+  deviceId   String?
+  timestamp  DateTime    @default(now())
+
+  @@map("access_log")
+}
+
+model Authorization {
+  id          String      @id @default(cuid())
+  userId      String
+  user        CampusUser  @relation(fields: [userId], references: [id])
+  gateId      String
+  gate        Gate        @relation(fields: [gateId], references: [id])
+  accessLevel String      @default("STANDARD")
+  isActive    Boolean     @default(true)
+  validFrom   DateTime?
+  validUntil  DateTime?
+  daysOfWeek  String?
+  timeFrom    String?
+  timeUntil   String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("authorization")
+}
+
+model SecurityAlert {
+  id          String      @id @default(cuid())
+  alertType   String
+  severity    String
+  title       String
+  description String
+  gateId      String?
+  gate        Gate?       @relation(fields: [gateId], references: [id])
+  userId      String?
+  user        CampusUser? @relation(fields: [userId], references: [id])
+  resolved    Boolean     @default(false)
+  resolvedAt  DateTime?
+  timestamp   DateTime    @default(now())
+
+  @@map("security_alert")
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("ADMIN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("admin_user")
+}

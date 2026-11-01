@@ -1,0 +1,37 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# next.js build output
+.next/
+out/
+build/
+next-env.d.ts
+*.tsbuildinfo
+
+# secrets: never commit these
+.env
+.env.*
+!.env.example
+
+# local database (the app re-seeds sample data on first load)
+*.db
+*.db-journal
+prisma/*.db
+prisma/*.db-journal
+
+# logs
+*.log
+server.log
+npm-debug.log*
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# misc
+coverage/
+.vercel
