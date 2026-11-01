@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { isAllowedByRole, roleDenyReason } from '@/lib/access-policy';
 
 // Simulate RFID/Biometric scan and authorization check
 export async function POST(request: NextRequest) {
@@ -23,6 +24,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'Gate is offline',
+        reason: `Gate is ${String(gate.status).toLowerCase()}`,
         result: 'DENIED'
       });
     }
@@ -105,6 +107,21 @@ export async function POST(request: NextRequest) {
     // Check time-based access if authorization exists
     let isAuthorized = !!authorization;
     let denyReason = 'No authorization for this gate';
+
+    // Role-based default: when no explicit rule exists for this gate, the user type decides.
+    // An explicitly revoked (inactive) rule always wins over the role default.
+    if (!authorization) {
+      const revoked = await db.authorization.findFirst({
+        where: { userId: user.id, gateId, isActive: false }
+      });
+      if (revoked) {
+        denyReason = 'Access revoked for this gate';
+      } else if (isAllowedByRole(user.userType, gate.gateType)) {
+        isAuthorized = true;
+      } else {
+        denyReason = roleDenyReason(user.userType);
+      }
+    }
 
     if (authorization) {
       const now = new Date();
